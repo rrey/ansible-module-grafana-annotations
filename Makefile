@@ -2,6 +2,8 @@
 syntax:
 	pycodestyle --ignore=E265 library/grafana_annotations.py
 
-check:
+container:
 	tools/start_grafana.sh
-	ansible-playbook test.yml
+
+check: container
+	GRAFANA_API_TOKEN='$(shell python tools/get_or_create_token.py)' ansible-playbook test.yml

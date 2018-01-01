@@ -1,11 +1,18 @@
 - hosts: localhost
   connection: local
   tasks:
-    - name: Create a global annotation without time information
+    - name: Create a global annotation without time information (login/passwd)
       grafana_annotations:
         addr: "127.0.0.1:3000"
         user: "admin"
         passwd: "admin"
+        text: "This is an annotation with automatic time value"
+      register: anno
+
+    - name: Create a global annotation without time information (token)
+      grafana_annotations:
+        addr: "127.0.0.1:3000"
+        token: "{{ lookup('env','GRAFANA_API_TOKEN') }}"
         text: "This is an annotation with automatic time value"
       register: anno
 
