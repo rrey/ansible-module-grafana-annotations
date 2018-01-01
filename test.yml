@@ -1,0 +1,72 @@
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Create a global annotation without time information
+      grafana_annotations:
+        addr: "127.0.0.1:3000"
+        user: "admin"
+        passwd: "admin"
+        text: "This is an annotation with automatic time value"
+      register: anno
+
+    - debug:
+        var: anno
+
+    - shell: date +%s
+      register: curdate
+    
+    - name: Create a global annotation with time annotation
+      grafana_annotations:
+        addr: "127.0.0.1:3000"
+        user: "admin"
+        passwd: "admin"
+        time: "{{ curdate.stdout }}"
+        text: "This is an annotation explicitly set at 1514822276"
+      register: anno
+
+    - debug:
+        var: anno
+
+    - name: test idempotence
+      grafana_annotations:
+        addr: "127.0.0.1:3000"
+        user: "admin"
+        passwd: "admin"
+        time: "{{ curdate.stdout }}"
+        text: "This is an annotation explicitly set at 1514822276"
+      register: anno
+
+    - assert:
+        that: not anno.changed
+
+    - shell: date +%s
+      register: curdate
+
+    - shell: expr $(date +%s) - 3600
+      register: start_date
+    
+    - name: Create a global region annotation
+      grafana_annotations:
+        addr: "127.0.0.1:3000"
+        user: "admin"
+        passwd: "admin"
+        time: "{{ start_date.stdout }}"
+        timeEnd: "{{ curdate.stdout }}"
+        text: "This is a global region annotation"
+      register: anno
+
+    - debug:
+        var: anno
+
+    - name: Test idempotence on region annotation
+      grafana_annotations:
+        addr: "127.0.0.1:3000"
+        user: "admin"
+        passwd: "admin"
+        time: "{{ start_date.stdout }}"
+        timeEnd: "{{ curdate.stdout }}"
+        text: "This is a global region annotation"
+      register: anno
+
+    - assert:
+        that: not anno.changed
