@@ -182,7 +182,7 @@ def main():
         argument_spec={
             'addr': dict(required=True),
             'user': dict(required=False, default=None),
-            'passwd': dict(required=False, default=None),
+            'passwd': dict(required=False, default=None, no_log=True),
             'time': dict(required=False, default=None),
             'timeEnd': dict(required=False, default=None, type=int),
             'tags': dict(required=False, default=[], type=list),
