@@ -33,5 +33,5 @@ Publish annotations in grafana from ansible playbooks/roles.
 # Advices
 
 * Do not use the admin user to plublish your annotations.
-  Create a dedicated user for ansible.
-* Store the password in an ansible vault to avoid use of password in clear in the playbooks. 
+  Create a dedicated user for ansible or use API tokens.
+* Store the password (or token) in an ansible vault to avoid use of password in clear in the playbooks. 
