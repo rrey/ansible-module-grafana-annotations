@@ -30,6 +30,10 @@ options:
         required: false
         description:
             - password for the http authentication on the REST API
+    token:
+        required: false
+        description:
+            - Grafana API token
     time:
         required: false
         description:
@@ -143,15 +147,17 @@ def filter_annotations(annos, annotation):
 
 class GrafanaManager(object):
     """Manage communication with grafana HTTP API"""
-    def __init__(self, addr, user=None, passwd=None, secure=False):
+    def __init__(self, addr, user=None, passwd=None, token=None, secure=False):
         self.addr = addr
         self.headers = {"Content-Type": "application-json",
                         "Accept": "application/json"}
         self.secure = secure
         if user and passwd:
             cred = "%s:%s" % (user, passwd)
-            authorisation = "Basic %s" % b64encode(cred).decode('ascii')
-            self.headers["Authorization"] = authorisation
+            authorization = "Basic %s" % b64encode(cred).decode('ascii')
+        if token:
+            authorization = "Bearer %s" % token
+        self.headers["Authorization"] = authorization
 
     def query(self, method, uri, data=None):
         http = httplib.HTTPConnection(self.addr)
@@ -183,6 +189,7 @@ def main():
             'addr': dict(required=True),
             'user': dict(required=False, default=None),
             'passwd': dict(required=False, default=None, no_log=True),
+            'token': dict(required=False, default=None, no_log=True),
             'time': dict(required=False, default=None),
             'timeEnd': dict(required=False, default=None, type=int),
             'tags': dict(required=False, default=[], type=list),
@@ -194,12 +201,16 @@ def main():
     addr = module.params['addr']
     user = module.params['user']
     passwd = module.params['passwd']
+    token = module.params['token']
     _time = module.params['time']
     time_end = module.params['timeEnd']
     tags = ["ansible"] + module.params['tags']
     text = module.params['text']
 
-    grafana = GrafanaManager(addr, user=user, passwd=passwd)
+    if (not user and not passwd) and not token:
+        module.fail_json(msg="Authentication method must be provided (user/passwd or token)")
+
+    grafana = GrafanaManager(addr, user=user, passwd=passwd, token=token)
 
     if not _time:
         _time = int(time.time()) * 1000

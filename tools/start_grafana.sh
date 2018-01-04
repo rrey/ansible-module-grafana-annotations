@@ -7,4 +7,5 @@ docker pull grafana/grafana
 [ $? -ne 0 ] && exit 1
 
 docker run -d --name=grafana -p 3000:3000 grafana/grafana
+sleep 2
 exit $?
