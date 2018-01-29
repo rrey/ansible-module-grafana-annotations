@@ -2,6 +2,8 @@
 
 Publish annotations in grafana from ansible playbooks/roles.
 
+[![Build Status](https://travis-ci.org/rrey/ansible-module-grafana-annotations.svg?branch=master)](https://travis-ci.org/rrey/ansible-module-grafana-annotations)
+
 # Examples
 
 ```
