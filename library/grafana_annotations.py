@@ -37,12 +37,12 @@ options:
     time:
         required: false
         description:
-            - epoch datetime in milliseconds.
+            - epoch datetime in seconds.
               If not specified, the current localtime is used.
     timeEnd:
         required: false
         description:
-            - epoch datetime in milliseconds, automatically define the
+            - epoch datetime in seconds, automatically define the
             annotation as a region annotation.
     tags:
         required: false
@@ -194,6 +194,7 @@ def main():
             'timeEnd': dict(required=False, default=None, type=int),
             'tags': dict(required=False, default=[], type=list),
             'text': dict(required=True, type=str),
+            'secure': dict(required=False, default=False, type=bool),
         },
         supports_check_mode=False
     )
@@ -206,11 +207,12 @@ def main():
     time_end = module.params['timeEnd']
     tags = ["ansible"] + module.params['tags']
     text = module.params['text']
+    secure = module.params['secure']
 
     if (not user and not passwd) and not token:
         module.fail_json(msg="Authentication method must be provided (user/passwd or token)")
 
-    grafana = GrafanaManager(addr, user=user, passwd=passwd, token=token)
+    grafana = GrafanaManager(addr, user=user, passwd=passwd, token=token, secure=secure)
 
     if not _time:
         _time = int(time.time()) * 1000
