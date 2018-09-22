@@ -1,10 +1,21 @@
+stages:
+  - test
+  - test-doc
+
 language: python
 sudo: required
 python:
-    - "2.7"
-install:
-    - pip install -r requirements.txt
-script:
-    - make check
+  - "2.7"
 services:
-    - docker
+  - docker
+install:
+  - pip install -r requirements.txt
+
+jobs:
+  include:
+    - stage: test
+      script:
+        - make check
+    - stage: test-doc
+      script:
+        - ansible-doc -t module -M ./library grafana_annotations > /dev/null
