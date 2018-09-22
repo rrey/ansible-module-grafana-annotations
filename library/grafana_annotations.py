@@ -16,7 +16,8 @@ API_URI = "/api/annotations"
 DOCUMENTATION = '''
 ---
 module: grafana_annotations
-short_description: Interact with Grafana REST API to create annotations.
+description: Allows to create annotations in Grafana from playbooks.
+short_description: Create annotations in Grafana through the dedicated API.
 options:
     addr:
         required: true
@@ -42,8 +43,7 @@ options:
     timeEnd:
         required: false
         description:
-            - epoch datetime in seconds, automatically define the
-            annotation as a region annotation.
+            - epoch datetime in seconds, automatically define the annotation as a region annotation.
     tags:
         required: false
         description:
@@ -57,8 +57,7 @@ options:
         required: false
         default: false
         description:
-            - If true, an https connection will be established with the
-            Grafana server.
+            - If true, an https connection will be established with the Grafana server.
 '''
 
 EXAMPLES = '''
