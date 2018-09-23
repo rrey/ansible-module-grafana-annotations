@@ -1,79 +1,113 @@
 - hosts: localhost
   connection: local
+  gather_facts: no
+  vars:
+    grafana_login: admin
+    grafana_password: admin
+    grafana_url: http://127.0.0.1:3000/api/annotations
   tasks:
+
     - name: Create a global annotation without time information (login/passwd)
       grafana_annotations:
-        addr: "127.0.0.1:3000"
-        user: "admin"
-        passwd: "admin"
+        url: "{{ grafana_url }}"
+        url_username: "{{ grafana_login }}"
+        url_password: "{{ grafana_password }}"
         text: "This is an annotation with automatic time value"
       register: anno
+      tags:
+        - base
 
     - name: Create a global annotation without time information (token)
       grafana_annotations:
-        addr: "127.0.0.1:3000"
+        url: "{{ grafana_url }}"
         token: "{{ lookup('env','GRAFANA_API_TOKEN') }}"
         text: "This is an annotation with automatic time value"
       register: anno
+      tags:
+        - token
 
     - debug:
         var: anno
+      tags:
+        - token
 
-    - shell: date +%s
-      register: curdate
+    - set_fact:
+        curdate: "{{ '%s' | strftime() | int}}"
+      tags:
+        - base
     
     - name: Create a global annotation with time annotation
       grafana_annotations:
-        addr: "127.0.0.1:3000"
-        user: "admin"
-        passwd: "admin"
-        time: "{{ curdate.stdout }}"
-        text: "This is an annotation explicitly set at 1514822276"
+        url: "{{ grafana_url }}"
+        url_username: "{{ grafana_login }}"
+        url_password: "{{ grafana_password }}"
+        tstamp: "{{ curdate }}"
+        text: "This is an annotation explicitly set at {{ curdate }}"
+        tags:
+            - test-tag
       register: anno
+      tags:
+        - base
 
     - debug:
         var: anno
+      tags:
+        - base
 
     - name: test idempotence
       grafana_annotations:
-        addr: "127.0.0.1:3000"
-        user: "admin"
-        passwd: "admin"
-        time: "{{ curdate.stdout }}"
-        text: "This is an annotation explicitly set at 1514822276"
+        url: "{{ grafana_url }}"
+        url_username: "{{ grafana_login }}"
+        url_password: "{{ grafana_password }}"
+        tstamp: "{{ curdate }}"
+        text: "This is an annotation explicitly set at {{ curdate }}"
+        tags:
+            - test-tag
       register: anno
+      tags:
+        - base
 
     - assert:
         that: not anno.changed
+      tags:
+        - base
 
-    - shell: date +%s
-      register: curdate
+    - set_fact:
+        start_date: "{{ '%s' | strftime() | int - 3600 }}"
+        end_date: "{{ '%s' | strftime() | int}}"
+      tags:
+        - region
 
-    - shell: expr $(date +%s) - 3600
-      register: start_date
-    
     - name: Create a global region annotation
       grafana_annotations:
-        addr: "127.0.0.1:3000"
-        user: "admin"
-        passwd: "admin"
-        time: "{{ start_date.stdout }}"
-        timeEnd: "{{ curdate.stdout }}"
+        url: "{{ grafana_url }}"
+        url_username: "{{ grafana_login }}"
+        url_password: "{{ grafana_password }}"
+        tstamp: "{{ start_date }}"
+        end_tstamp: "{{ end_date }}"
         text: "This is a global region annotation"
       register: anno
+      tags:
+        - region
 
     - debug:
         var: anno
+      tags:
+        - region
 
     - name: Test idempotence on region annotation
       grafana_annotations:
-        addr: "127.0.0.1:3000"
-        user: "admin"
-        passwd: "admin"
-        time: "{{ start_date.stdout }}"
-        timeEnd: "{{ curdate.stdout }}"
+        url: "{{ grafana_url }}"
+        url_username: "{{ grafana_login }}"
+        url_password: "{{ grafana_password }}"
+        tstamp: "{{ start_date }}"
+        end_tstamp: "{{ end_date }}"
         text: "This is a global region annotation"
       register: anno
+      tags:
+        - region
 
     - assert:
         that: not anno.changed
+      tags:
+        - region

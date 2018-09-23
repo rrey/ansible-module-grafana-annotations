@@ -1,17 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from base64 import b64encode
 import urllib
 import time
 import json
-try:
-    import httplib
-except ImportError:
-    # Python 3
-    import http.client as httplib
 
-API_URI = "/api/annotations"
+from ansible.module_utils.urls import fetch_url, basic_auth_header, url_argument_spec
+from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
@@ -88,23 +83,6 @@ EXAMPLES = '''
 '''
 
 
-def build_search_uri(uri, annotation):
-    """Return the search uri based on the annotation"""
-    params = []
-    tags = annotation.get("tags", None)
-    if tags:
-        for tag in tags:
-            params.append("tags=%s" % urllib.quote_plus(tag))
-    if annotation.get('time', None):
-        params.append("from=%s" % annotation.get('time'))
-    if annotation.get('timeEnd', None):
-        params.append("to=%s" % annotation.get('timeEnd'))
-    else:
-        params.append("to=%s" % (int(time.time()) * 1000))
-
-    if params:
-        uri = "%s?%s" % (uri, '&'.join(params))
-    return uri
 
 
 def default_filter(annos, annotation):
@@ -139,102 +117,135 @@ def region_filter(annos, annotation):
 
 def filter_annotations(annos, annotation):
     """Filter the annotations that does not match `annotation`"""
-    if annotation.get("isRegion", False) is True:
+    annotation = annotation.as_dict()
+    if annotation.get("isRegion", False):
         return region_filter(annos, annotation)
     return default_filter(annos, annotation)
 
 
 class GrafanaManager(object):
     """Manage communication with grafana HTTP API"""
-    def __init__(self, addr, user=None, passwd=None, token=None, secure=False):
-        self.addr = addr
-        self.headers = {"Content-Type": "application-json",
-                        "Accept": "application/json"}
-        self.secure = secure
-        if user and passwd:
-            cred = "%s:%s" % (user, passwd)
-            authorization = "Basic %s" % b64encode(cred).decode('ascii')
-        if token:
+
+    def __init__(self, module, url, url_username, url_password, token):
+        self.module = module
+        self.url = url
+        self.headers = {"Content-Type": "application-json", "Accept": "application/json"}
+        if url_username and url_password:
+            authorization = basic_auth_header(url_username, url_password)
+        elif token:
             authorization = "Bearer %s" % token
         self.headers["Authorization"] = authorization
 
-    def query(self, method, uri, data=None):
-        http = httplib.HTTPConnection(self.addr)
-        if self.secure:
-            http = httplib.HTTPSConnection(self.addr)
-        http.request(method, uri, data, headers=self.headers)
-        response = http.getresponse()
-        return response.status, json.loads(response.read())
+
+    def build_search_uri(self, annotation):
+        """Return the search url based on the annotation"""
+        params = []
+        annotation = annotation.as_dict()
+        tags = annotation.get("tags", None)
+        if tags:
+            for tag in tags:
+                params.append("tags=%s" % urllib.quote_plus(tag))
+        if annotation.get('time', None):
+            params.append("from=%s" % annotation.get('time'))
+        if annotation.get('timeEnd', None):
+            params.append("to=%s" % annotation.get('timeEnd'))
+        else:
+            params.append("to=%s" % (int(time.time()) * 1000))
+
+        if params:
+            uri = "%s?%s" % (self.url, '&'.join(params))
+        return uri
+
 
     def get_annotation(self, annotation):
         """Search for the annotation in grafana"""
-        uri = build_search_uri(API_URI, annotation)
-        status, annos = self.query("GET", uri)
-        if status != 200:
-            raise Exception("Grafana answered with HTTP %d" % status)
+        url = self.build_search_uri(annotation)
+        resp, info = fetch_url(self.module, url, data=annotation.json, headers=self.headers, method="GET")
+
+        status_code = info["status"]
+        if status_code != 200:
+            raise Exception("Grafana answered with HTTP %d" % status_code)
+
+        annos = json.loads(resp.read())
         return filter_annotations(annos, annotation)
 
-    def create_annotation(self, annotation):
-        """Submit an annotation to grafana"""
-        status, data = self.query("POST", API_URI, json.dumps(annotation))
-        if status != 200:
-            raise Exception("Grafana answered with HTTP %d" % response.status)
-        return data
+
+    def send_annotation(self, annotation):
+        resp, info = fetch_url(self.module, self.url, data=annotation.json, headers=self.headers, method="POST")
+
+        status_code = info["status"]
+        if not 200 <= status_code <= 299:
+            raise Exception("Grafana answered with HTTP %d" % status_code)
+        return resp.read()
+
+
+# {{{ Annotation object
+
+class Annotation(object):
+
+    def __init__(self, text, tags, tstamp=None, end_tstamp=None):
+        self.text = text
+        self.tags = tags
+        self._set_time(tstamp)
+        self.isRegion = False
+        if end_tstamp:
+            self.timeEnd = int(end_tstamp) * 1000
+            self.isRegion = True
+
+    def _set_time(self, tstamp=None, end_tstamp=None):
+        if tstamp:
+            self.time = int(tstamp) * 1000
+        else:
+            self.time = int(time.time()) * 1000
+
+    def as_dict(self):
+        return self.__dict__
+
+    @property
+    def json(self):
+        return json.dumps(self.__dict__)
+
+# }}}
 
 
 def main():
+    base_arg_spec = url_argument_spec()
+    base_arg_spec.update(
+        token=dict(required=False, default=None, no_log=True),
+        tstamp=dict(required=False, default=None),
+        end_tstamp=dict(required=False, default=None, type='int'),
+        tags=dict(required=False, default=[], type='list'),
+        text=dict(required=True, type='str'),
+    )
     module = AnsibleModule(
-        argument_spec={
-            'addr': dict(required=True),
-            'user': dict(required=False, default=None),
-            'passwd': dict(required=False, default=None, no_log=True),
-            'token': dict(required=False, default=None, no_log=True),
-            'time': dict(required=False, default=None),
-            'timeEnd': dict(required=False, default=None, type=int),
-            'tags': dict(required=False, default=[], type=list),
-            'text': dict(required=True, type=str),
-            'secure': dict(required=False, default=False, type=bool),
-        },
-        supports_check_mode=False
+        argument_spec=base_arg_spec,
+        supports_check_mode=False,
+        mutually_exclusive=[['url_username', 'token']]
     )
 
-    addr = module.params['addr']
-    user = module.params['user']
-    passwd = module.params['passwd']
+    url = module.params['url']
+    url_username = module.params['url_username']
+    url_password = module.params['url_password']
     token = module.params['token']
-    _time = module.params['time']
-    time_end = module.params['timeEnd']
+    tstamp = module.params['tstamp']
+    end_tstamp = module.params['end_tstamp']
     tags = ["ansible"] + module.params['tags']
     text = module.params['text']
-    secure = module.params['secure']
 
-    if (not user and not passwd) and not token:
-        module.fail_json(msg="Authentication method must be provided (user/passwd or token)")
+    annotation = Annotation(text, tags, tstamp=tstamp, end_tstamp=end_tstamp)
 
-    grafana = GrafanaManager(addr, user=user, passwd=passwd, token=token, secure=secure)
+    grafana = GrafanaManager(module, url, url_username, url_password, token)
 
-    if not _time:
-        _time = int(time.time()) * 1000
-    else:
-        _time = int(_time) * 1000
-
-    annotation = {"time": _time, "tags": tags, "text": text}
-
-    if time_end:
-        annotation['timeEnd'] = time_end * 1000
-        annotation['isRegion'] = True
 
     changed = False
     try:
         annotations = grafana.get_annotation(annotation)
         if not annotations:
-            annotation = grafana.create_annotation(annotation)
+            annotation = grafana.send_annotation(annotation)
             annotations = [annotation]
             changed = True
     except Exception as err:
-        module.fail_json(msg=str(err), annotation=annotation)
+        module.fail_json(msg=str(err), annotation=annotation.json)
     module.exit_json(annotations=annotations, changed=changed)
 
-
-#<<INCLUDE_ANSIBLE_MODULE_COMMON>>
 main()
