@@ -215,8 +215,8 @@ def main():
     base_arg_spec = url_argument_spec()
     base_arg_spec.update(
         token=dict(required=False, default=None, no_log=True),
-        tstamp=dict(required=False, default=None),
-        end_tstamp=dict(required=False, default=None, type='int'),
+        time=dict(required=False, default=None),
+        timeEnd=dict(required=False, default=None, type='int'),
         tags=dict(required=False, default=[], type='list'),
         text=dict(required=True, type='str'),
     )
@@ -230,8 +230,8 @@ def main():
     url_username = module.params['url_username']
     url_password = module.params['url_password']
     token = module.params['token']
-    tstamp = module.params['tstamp']
-    end_tstamp = module.params['end_tstamp']
+    tstamp = module.params['time']
+    end_tstamp = module.params['timeEnd']
     tags = ["ansible"] + module.params['tags']
     text = module.params['text']
 

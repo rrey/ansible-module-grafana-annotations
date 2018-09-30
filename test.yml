@@ -41,7 +41,7 @@
         url: "{{ grafana_url }}"
         url_username: "{{ grafana_login }}"
         url_password: "{{ grafana_password }}"
-        tstamp: "{{ curdate }}"
+        time: "{{ curdate }}"
         text: "This is an annotation explicitly set at {{ curdate }}"
         tags:
             - test-tag
@@ -59,7 +59,7 @@
         url: "{{ grafana_url }}"
         url_username: "{{ grafana_login }}"
         url_password: "{{ grafana_password }}"
-        tstamp: "{{ curdate }}"
+        time: "{{ curdate }}"
         text: "This is an annotation explicitly set at {{ curdate }}"
         tags:
             - test-tag
@@ -83,8 +83,8 @@
         url: "{{ grafana_url }}"
         url_username: "{{ grafana_login }}"
         url_password: "{{ grafana_password }}"
-        tstamp: "{{ start_date }}"
-        end_tstamp: "{{ end_date }}"
+        time: "{{ start_date }}"
+        timeEnd: "{{ end_date }}"
         text: "This is a global region annotation"
       register: anno
       tags:
@@ -100,8 +100,8 @@
         url: "{{ grafana_url }}"
         url_username: "{{ grafana_login }}"
         url_password: "{{ grafana_password }}"
-        tstamp: "{{ start_date }}"
-        end_tstamp: "{{ end_date }}"
+        time: "{{ start_date }}"
+        timeEnd: "{{ end_date }}"
         text: "This is a global region annotation"
       register: anno
       tags:

@@ -41,7 +41,7 @@ class TestClass(object):
                 "url": "http://127.0.0.1:3000/api/annotations",
                 "url_password": "admin",
                 "url_username": "admin",
-                "tstamp": str(current_time),
+                "time": str(current_time),
                 "_ansible_remote_tmp": "/tmp",
                 "_ansible_keep_remote_files": "false"
             }
@@ -59,7 +59,7 @@ class TestClass(object):
                 "url": "http://127.0.0.1:3000/api/annotations",
                 "url_password": "admin",
                 "url_username": "admin",
-                "tstamp": str(current_time),
+                "time": str(current_time),
                 "_ansible_remote_tmp": "/tmp",
                 "_ansible_keep_remote_files": "false"
             }
