@@ -89,9 +89,12 @@ def default_filter(annos, annotation):
     """default filter comparing 'time', 'text' and 'tags' parameters"""
     result = []
     for anno in annos:
-        for key in ['time', 'text', 'tags']:
-            if anno.get(key) != annotation.get(key):
-                continue
+        if anno.get('time') != annotation.get('time'):
+            continue
+        if anno.get('text') != annotation.get('text'):
+            continue
+        if anno.get('tags') != annotation.get('tags'):
+            continue
         result.append(anno)
     return result
 
