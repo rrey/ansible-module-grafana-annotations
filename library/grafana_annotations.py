@@ -35,10 +35,6 @@ options:
         description:
             - epoch datetime in seconds.
               If not specified, the current localtime is used.
-    timeEnd:
-        required: false
-        description:
-            - epoch datetime in seconds, automatically define the annotation as a region annotation.
     tags:
         required: false
         description:
@@ -48,11 +44,6 @@ options:
         required: true
         description:
             - Text to be displayed in the annotation
-    secure:
-        required: false
-        default: false
-        description:
-            - If true, an https connection will be established with the Grafana server.
 '''
 
 EXAMPLES = '''
@@ -70,19 +61,7 @@ EXAMPLES = '''
     passwd: "grafana_password"
     time: 1513000095
     text: "Planned intervention on production server"
-
-- name: Create a global region annotation
-  grafana_annotations:
-    addr: "10.4.3.173:8080"
-    user: "grafana_login"
-    passwd: "grafana_password"
-    time: 1513000095
-    timeEnd: 1513005095
-    text: "Execution of the xxxx playbook"
-
 '''
-
-
 
 
 def default_filter(annos, annotation):
@@ -99,30 +78,9 @@ def default_filter(annos, annotation):
     return result
 
 
-def region_filter(annos, annotation):
-    """filter for Region annotations.
-    The 'time' parameter can match either 'time' or 'timeEnd' parameters.
-    """
-    result = []
-    for anno in annos:
-        time = annotation.get("time")
-        timeEnd = annotation.get("timeEnd")
-        for key in ['text', 'tags']:
-            if anno.get(key) != annotation.get(key):
-                continue
-        if anno.get("regionId") == 0:
-            continue
-        if anno.get("time") not in [time, timeEnd]:
-            continue
-        result.append(anno)
-    return result
-
-
 def filter_annotations(annos, annotation):
     """Filter the annotations that does not match `annotation`"""
     annotation = annotation.as_dict()
-    if annotation.get("isRegion", False):
-        return region_filter(annos, annotation)
     return default_filter(annos, annotation)
 
 
@@ -163,7 +121,7 @@ class GrafanaManager(object):
     def get_annotation(self, annotation):
         """Search for the annotation in grafana"""
         url = self.build_search_uri(annotation)
-        resp, info = fetch_url(self.module, url, data=annotation.json, headers=self.headers, method="GET")
+        resp, info = fetch_url(self.module, url, data=annotation.as_json(), headers=self.headers, method="GET")
 
         status_code = info["status"]
         if status_code != 200:
@@ -174,7 +132,7 @@ class GrafanaManager(object):
 
 
     def send_annotation(self, annotation):
-        resp, info = fetch_url(self.module, self.url, data=annotation.json, headers=self.headers, method="POST")
+        resp, info = fetch_url(self.module, self.url, data=annotation.as_json(), headers=self.headers, method="POST")
 
         status_code = info["status"]
         if not 200 <= status_code <= 299:
@@ -186,16 +144,12 @@ class GrafanaManager(object):
 
 class Annotation(object):
 
-    def __init__(self, text, tags, tstamp=None, end_tstamp=None):
+    def __init__(self, text, tags, tstamp=None):
         self.text = text
         self.tags = tags
         self._set_time(tstamp)
-        self.isRegion = False
-        if end_tstamp:
-            self.timeEnd = int(end_tstamp) * 1000
-            self.isRegion = True
 
-    def _set_time(self, tstamp=None, end_tstamp=None):
+    def _set_time(self, tstamp=None):
         if tstamp:
             self.time = int(tstamp) * 1000
         else:
@@ -204,8 +158,7 @@ class Annotation(object):
     def as_dict(self):
         return self.__dict__
 
-    @property
-    def json(self):
+    def as_json(self):
         return json.dumps(self.__dict__)
 
 # }}}
@@ -216,7 +169,6 @@ def main():
     base_arg_spec.update(
         token=dict(required=False, default=None, no_log=True),
         time=dict(required=False, default=None),
-        timeEnd=dict(required=False, default=None, type='int'),
         tags=dict(required=False, default=[], type='list'),
         text=dict(required=True, type='str'),
     )
@@ -231,11 +183,10 @@ def main():
     url_password = module.params['url_password']
     token = module.params['token']
     tstamp = module.params['time']
-    end_tstamp = module.params['timeEnd']
     tags = ["ansible"] + module.params['tags']
     text = module.params['text']
 
-    annotation = Annotation(text, tags, tstamp=tstamp, end_tstamp=end_tstamp)
+    annotation = Annotation(text, tags, tstamp=tstamp)
 
     grafana = GrafanaManager(module, url, url_username, url_password, token)
 
@@ -248,7 +199,7 @@ def main():
             annotations = [annotation]
             changed = True
     except Exception as err:
-        module.fail_json(msg=str(err), annotation=annotation.json)
+        module.fail_json(msg=str(err), annotation=annotation.as_json())
     module.exit_json(annotations=annotations, changed=changed)
 
 main()
