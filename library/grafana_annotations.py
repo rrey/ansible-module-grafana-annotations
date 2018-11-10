@@ -14,7 +14,7 @@ module: grafana_annotations
 description: Allows to create annotations in Grafana from playbooks.
 short_description: Create annotations in Grafana through the dedicated API.
 options:
-    addr:
+    url:
         required: true
         description:
             - address of the grafana REST API
@@ -30,12 +30,12 @@ options:
         required: false
         description:
             - Grafana API token
-    time:
+    tstamp:
         required: false
         description:
             - epoch datetime in seconds.
               If not specified, the current localtime is used.
-    timeEnd:
+    end_tstamp:
         required: false
         description:
             - epoch datetime in seconds, automatically define the annotation as a region annotation.
@@ -48,41 +48,34 @@ options:
         required: true
         description:
             - Text to be displayed in the annotation
-    secure:
-        required: false
-        default: false
-        description:
-            - If true, an https connection will be established with the Grafana server.
 '''
 
 EXAMPLES = '''
 - name: Create a global annotation
   grafana_annotations:
-    addr: "10.4.3.173:8080"
+    url: "10.4.3.173:8080/api/annotations"
     user: "grafana_login"
     passwd: "grafana_password"
     text: "Started update of production environment"
 
 - name: Create a global annotation
   grafana_annotations:
-    addr: "10.4.3.173:8080"
+    url: "10.4.3.173:8080/api/annotations"
     user: "grafana_login"
     passwd: "grafana_password"
-    time: 1513000095
+    tstamp: 1513000095
     text: "Planned intervention on production server"
 
 - name: Create a global region annotation
   grafana_annotations:
-    addr: "10.4.3.173:8080"
+    url: "10.4.3.173:8080/api/annotations"
     user: "grafana_login"
     passwd: "grafana_password"
-    time: 1513000095
-    timeEnd: 1513005095
+    tstamp: 1513000095
+    end_tstamp: 1513005095
     text: "Execution of the xxxx playbook"
 
 '''
-
-
 
 
 def default_filter(annos, annotation):
