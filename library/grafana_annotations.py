@@ -48,6 +48,14 @@ options:
         required: true
         description:
             - Text to be displayed in the annotation
+    dashboard_id:
+        required: false
+        description:
+            - The dashboard id where the annotation will be added
+    panel_id:
+        required: false
+        description:
+            - The panel id where the annotation will be added
 '''
 
 EXAMPLES = '''
@@ -186,7 +194,8 @@ class GrafanaManager(object):
 
 class Annotation(object):
 
-    def __init__(self, text, tags, tstamp=None, end_tstamp=None):
+    def __init__(self, text, tags, tstamp=None, end_tstamp=None,
+                 dashboard_id=None, panel_id=None):
         self.text = text
         self.tags = tags
         self._set_time(tstamp)
@@ -194,6 +203,10 @@ class Annotation(object):
         if end_tstamp:
             self.timeEnd = int(end_tstamp) * 1000
             self.isRegion = True
+        if dashboard_id:
+            self.dashboardId = dashboard_id
+        if panel_id:
+            self.panelId = panel_id
 
     def _set_time(self, tstamp=None, end_tstamp=None):
         if tstamp:
@@ -219,6 +232,8 @@ def main():
         end_tstamp=dict(required=False, default=None, type='int'),
         tags=dict(required=False, default=[], type='list'),
         text=dict(required=True, type='str'),
+        dashboard_id=dict(required=False, type='int', default=None),
+        panel_id=dict(required=False, type='int', default=None)
     )
     module = AnsibleModule(
         argument_spec=base_arg_spec,
@@ -234,8 +249,11 @@ def main():
     end_tstamp = module.params['end_tstamp']
     tags = ["ansible"] + module.params['tags']
     text = module.params['text']
+    dashboard_id = module.params['dashboard_id']
+    panel_id = module.params['panel_id']
 
-    annotation = Annotation(text, tags, tstamp=tstamp, end_tstamp=end_tstamp)
+    annotation = Annotation(text, tags, tstamp=tstamp, end_tstamp=end_tstamp,
+                            dashboard_id=dashboard_id, panel_id=panel_id)
 
     grafana = GrafanaManager(module, url, url_username, url_password, token)
 
