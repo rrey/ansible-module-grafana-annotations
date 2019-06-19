@@ -1,7 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib
+try:
+    from urllib import quote_plus
+except ImportError:
+    from urllib.parse import quote_plus #lib has moved in python3, try to import from new location
 import time
 import json
 
@@ -140,7 +143,7 @@ class GrafanaManager(object):
         tags = annotation.get("tags", None)
         if tags:
             for tag in tags:
-                params.append("tags=%s" % urllib.quote_plus(tag))
+                params.append("tags=%s" % quote_plus(tag))
         if annotation.get('time', None):
             params.append("from=%s" % annotation.get('time'))
         if annotation.get('timeEnd', None):
