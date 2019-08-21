@@ -78,6 +78,13 @@ EXAMPLES = '''
     end_tstamp: 1513005095
     text: "Execution of the xxxx playbook"
 
+- name: Create annotation with a token on current timestamp
+  grafana_annotations:
+    url: "10.4.3.173:8080/api/annotations"
+    token: "fjdnejoiejefs2RQOdfsdfsdfTU1MmtUavoZXU4dfEU5ub3RhdldfgljneMi+kjhj="
+    tstamp: "{{ (ansible_date_time.epoch |int) + 7200 }}" # get current timestamp and add UTC+2 (60*60*2)
+    text: "Execution of the xxxx playbook with this {{ inventory_file }} from {{ ansible_hostname }}"
+
 '''
 
 
