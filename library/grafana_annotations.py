@@ -132,7 +132,7 @@ class GrafanaManager(object):
     def __init__(self, module, url, url_username, url_password, token):
         self.module = module
         self.url = url
-        self.headers = {"Content-Type": "application-json", "Accept": "application/json"}
+        self.headers = {"Content-Type": "application/json", "Accept": "application/json"}
         if url_username and url_password:
             authorization = basic_auth_header(url_username, url_password)
         elif token:
